@@ -48,6 +48,7 @@ const Note notes[] = {
 static float g_detectedFreq = 0.0f;
 static const Note* g_currentNote = nullptr;
 static float g_cents = 0.0f;
+static float g_rms = 0.0f;
 
 // SDL context
 static SDL_Window *g_window;
@@ -200,16 +201,25 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
 
     if (g_readyForProcessing) {
-        g_detectedFreq = DetectFrequencyAutocorrelation(g_audioBuffer, BUFFER_SIZE, SAMPLE_RATE);
 
-        // Temporary hack to only listen to guitar noise
-        if (g_detectedFreq < 60.0f || g_detectedFreq > 500.0f) {
-            g_detectedFreq = 0.0f; // or skip updating UI
-        }
+        // Calculate signal power (the hacky way)
+        float rms = 0.0f;
+        for (int i = 0; i < BUFFER_SIZE; ++i)
+            rms += g_audioBuffer[i] * g_audioBuffer[i];
+        rms = sqrtf(rms / BUFFER_SIZE);
 
-        if (g_detectedFreq > 20.0f) {
-            g_currentNote = &GetClosestNote(g_detectedFreq);
-            g_cents = GetCentsOff(g_detectedFreq, g_currentNote->freq);
+        if (rms > 0.01f) {
+            g_detectedFreq = DetectFrequencyAutocorrelation(g_audioBuffer, BUFFER_SIZE, SAMPLE_RATE);
+
+            // Only listen to guitar noise
+            if (g_detectedFreq < 60.0f || g_detectedFreq > 500.0f) {
+                g_detectedFreq = 0.0f; // TODO: Skip UI update instead
+            }
+
+            if (g_detectedFreq > 20.0f) {
+                g_currentNote = &GetClosestNote(g_detectedFreq);
+                g_cents = GetCentsOff(g_detectedFreq, g_currentNote->freq);
+            }
         }
 
         g_readyForProcessing = false;
