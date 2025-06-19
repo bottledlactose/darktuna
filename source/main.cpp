@@ -33,9 +33,21 @@ static bool g_readyForProcessing = false;
 static PaStream *g_stream = nullptr;
 static int g_selectedDevice = -1;
 
-// More audio context
+// Note definitions
+struct Note {
+    const char* name;
+    float freq;
+};
+
+const Note notes[] = {
+    {"E2", 82.41}, {"A2", 110.00}, {"D3", 146.83},
+    {"G3", 196.00}, {"B3", 246.94}, {"E4", 329.63},
+};
+
+// Audio state
 static float g_detectedFreq = 0.0f;
-// TODO: Add current note and cents info
+static const Note* g_currentNote = nullptr;
+static float g_cents = 0.0f;
 
 // SDL context
 static SDL_Window *g_window;
@@ -58,6 +70,23 @@ float DetectFrequencyAutocorrelation(const float *buffer, int size, float sample
 
     if (best_lag == 0) return 0.0f;
     return sample_rate / best_lag;
+}
+
+const Note& GetClosestNote(float freq) {
+    const Note* closest = &notes[0];
+    float minDiff = fabsf(freq - closest->freq);
+    for (const auto& note : notes) {
+        float diff = fabsf(freq - note.freq);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closest = &note;
+        }
+    }
+    return *closest;
+}
+
+float GetCentsOff(float freq, float refFreq) {
+    return 1200.0f * log2f(freq / refFreq);
 }
 
 static int AudioCallback(const void *input, void *, unsigned long frames,
@@ -141,7 +170,14 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     for (int i = 0; i < num_device; ++i) {
         const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
         if (info->maxInputChannels > 0) {
-            g_deviceNames.emplace_back(info->name);
+
+            const PaHostApiInfo *host_api = Pa_GetHostApiInfo(info->hostApi);
+
+            std::string label = std::string(info->name) + " (" + host_api->name + ")";
+            g_deviceNames.emplace_back(label);
+
+
+            //g_deviceNames.emplace_back(info->name + );
             g_deviceIndices.push_back(i);
         }
     }
@@ -162,7 +198,6 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Begin("Test");
 
     if (g_readyForProcessing) {
         g_detectedFreq = DetectFrequencyAutocorrelation(g_audioBuffer, BUFFER_SIZE, SAMPLE_RATE);
@@ -172,10 +207,27 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
             g_detectedFreq = 0.0f; // or skip updating UI
         }
 
-        // TODO: Get note and cents
+        if (g_detectedFreq > 20.0f) {
+            g_currentNote = &GetClosestNote(g_detectedFreq);
+            g_cents = GetCentsOff(g_detectedFreq, g_currentNote->freq);
+        }
 
-        ImGui::Text("detected_freq: %2.f", g_detectedFreq);
         g_readyForProcessing = false;
+    }
+
+    ImGui::Begin("Tuner");
+
+    if (g_detectedFreq > 20.0f && g_currentNote) {
+        ImGui::Text("Detected: %2.f Hz", g_detectedFreq);
+        ImGui::Text("Note: %s (%.2f Hz)", g_currentNote->name, g_currentNote->freq);
+        ImGui::Text("Cents off: %.2f", g_cents);
+
+        float needlePos = (g_cents + 50.0f) / 100.0f;
+        needlePos = fminf(fmaxf(needlePos, 0.0f), 1.0f);
+        ImGui::Text("Tuning");
+        ImGui::ProgressBar(needlePos, ImVec2(300, 20));
+    } else {
+        ImGui::Text("Listening...");
     }
 
     ImGui::End();
@@ -185,7 +237,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     for (int i = 0; i < g_deviceNames.size(); ++i) {
         bool is_selected = (g_selectedDevice == g_deviceIndices[i]);
-        if (ImGui::Selectable(g_deviceNames[i].c_str(), is_selected)) {
+        if (ImGui::Selectable((g_deviceNames[i] + "##" + std::to_string(i)).c_str(), is_selected)) {
             g_selectedDevice = g_deviceIndices[i];
             StartStream(g_selectedDevice);
         }
