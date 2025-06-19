@@ -183,9 +183,11 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
         }
     }
 
-    // Just pick the default device for now...
-    Pa_OpenDefaultStream(&g_stream, 1, 0, paFloat32, SAMPLE_RATE, FRAMES_PER_BUFFER, AudioCallback, nullptr);
-    Pa_StartStream(g_stream);
+    // Select the first device by default
+    if (!g_deviceIndices.empty()) {
+        g_selectedDevice = g_deviceIndices[0];
+        StartStream(g_selectedDevice);
+    }
 
     return SDL_APP_CONTINUE;
 }
