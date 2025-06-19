@@ -1,5 +1,7 @@
 #include <cstdlib>
 #include <cstdio>
+#include <string>
+#include <vector>
 
 #define SDL_MAIN_USE_CALLBACKS
 #include <SDL3/SDL_main.h>
@@ -13,8 +15,81 @@
 #include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_sdlrenderer3.h"
 
+#include "portaudio.h"
+
+// TODO: Maybe make these configurable?
+#define SAMPLE_RATE 44100
+#define FRAMES_PER_BUFFER 512
+#define BUFFER_SIZE 2048
+
+// These are populated on initialization
+static std::vector<std::string> g_deviceNames;
+static std::vector<int> g_deviceIndices;
+
+// Audio context
+static float g_audioBuffer[BUFFER_SIZE];
+static int g_bufferIndex = 0;
+static bool g_readyForProcessing = false;
+static PaStream *g_stream = nullptr;
+static int g_selectedDevice = -1;
+
+// More audio context
+static float g_detectedFreq = 0.0f;
+// TODO: Add current note and cents info
+
+// SDL context
 static SDL_Window *g_window;
 static SDL_Renderer *g_renderer;
+
+float DetectFrequencyAutocorrelation(const float *buffer, int size, float sample_rate) {
+    int best_lag = 0;
+    float max_correlation = 0.0f;
+
+    for (int lag = 20; lag < size / 2; ++lag) {
+        float sum = 0.0f;
+        for (int i = 0; i < size - lag; ++i) {
+            sum += buffer[i] * buffer[i + lag];
+        }
+        if (sum > max_correlation) {
+            max_correlation = sum;
+            best_lag = lag;
+        }
+    }
+
+    if (best_lag == 0) return 0.0f;
+    return sample_rate / best_lag;
+}
+
+static int AudioCallback(const void *input, void *, unsigned long frames,
+        const PaStreamCallbackTimeInfo *, PaStreamCallbackFlags, void *) {
+    const float *in = (const float *)input;
+        for (unsigned long i = 0; i < frames; ++i) {
+        g_audioBuffer[g_bufferIndex++] = *in++;
+        if (g_bufferIndex >= BUFFER_SIZE) {
+            g_bufferIndex = 0;
+            g_readyForProcessing = true;
+        }
+    }
+    return paContinue;
+}
+
+void StartStream(int device_index) {
+    if (g_stream) {
+        Pa_StopStream(g_stream);
+        Pa_CloseStream(g_stream);
+        g_stream = nullptr;
+    }
+
+    PaStreamParameters inputParams;
+    inputParams.device = device_index;
+    inputParams.channelCount = 1;
+    inputParams.sampleFormat = paFloat32;
+    inputParams.suggestedLatency = Pa_GetDeviceInfo(device_index)->defaultLowInputLatency;
+    inputParams.hostApiSpecificStreamInfo = nullptr;
+
+    Pa_OpenStream(&g_stream, &inputParams, nullptr, SAMPLE_RATE, FRAMES_PER_BUFFER, paNoFlag, AudioCallback, nullptr);
+    Pa_StartStream(g_stream);
+}
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 
@@ -59,6 +134,22 @@ SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
     ImGui_ImplSDL3_InitForSDLRenderer(g_window, g_renderer);
     ImGui_ImplSDLRenderer3_Init(g_renderer);
 
+    // Initialize audio library
+    Pa_Initialize();
+
+    int num_device = Pa_GetDeviceCount();
+    for (int i = 0; i < num_device; ++i) {
+        const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
+        if (info->maxInputChannels > 0) {
+            g_deviceNames.emplace_back(info->name);
+            g_deviceIndices.push_back(i);
+        }
+    }
+
+    // Just pick the default device for now...
+    Pa_OpenDefaultStream(&g_stream, 1, 0, paFloat32, SAMPLE_RATE, FRAMES_PER_BUFFER, AudioCallback, nullptr);
+    Pa_StartStream(g_stream);
+
     return SDL_APP_CONTINUE;
 }
 
@@ -71,9 +162,35 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
+    ImGui::Begin("Test");
+
+    if (g_readyForProcessing) {
+        g_detectedFreq = DetectFrequencyAutocorrelation(g_audioBuffer, BUFFER_SIZE, SAMPLE_RATE);
+
+        // Temporary hack to only listen to guitar noise
+        if (g_detectedFreq < 60.0f || g_detectedFreq > 500.0f) {
+            g_detectedFreq = 0.0f; // or skip updating UI
+        }
+
+        // TODO: Get note and cents
+
+        ImGui::Text("detected_freq: %2.f", g_detectedFreq);
+        g_readyForProcessing = false;
+    }
+
+    ImGui::End();
+
     // Create a testing window
-    ImGui::Begin("Hello, world!");
-    ImGui::Text("This is some useful text.");
+    ImGui::Begin("Devices");
+
+    for (int i = 0; i < g_deviceNames.size(); ++i) {
+        bool is_selected = (g_selectedDevice == g_deviceIndices[i]);
+        if (ImGui::Selectable(g_deviceNames[i].c_str(), is_selected)) {
+            g_selectedDevice = g_deviceIndices[i];
+            StartStream(g_selectedDevice);
+        }
+    }
+
     ImGui::End();
 
     ImGui::Render();

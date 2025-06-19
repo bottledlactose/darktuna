@@ -20,11 +20,14 @@ set(IMGUI_SOURCES
 
 add_subdirectory(thirdparty/sdl)
 
+set(PA_BUILD_SHARED_LIBS OFF CACHE BOOL "Build static PortAudio library")
+add_subdirectory(thirdparty/portaudio)
 
 add_executable(darktune source/main.cpp ${IMGUI_SOURCES})
 
 target_include_directories(darktune PRIVATE
     thirdparty/sdl/include
     thirdparty/imgui
+    thirdparty/portaudio/include
 )
-target_link_libraries(darktune PRIVATE SDL3-static)
+target_link_libraries(darktune PRIVATE SDL3-static portaudio)
