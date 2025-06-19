@@ -1,0 +1,30 @@
+cmake_minimum_required(VERSION 3.12)
+project(darktune VERSION 1.0.0 LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+set(SDL_SHARED OFF CACHE BOOL "Build shared SDL3 library")
+set(SDL_STATIC ON CACHE BOOL "Build static SDL3 library")
+
+set(IMGUI_SOURCES 
+    thirdparty/imgui/imgui.cpp
+    thirdparty/imgui/imgui_demo.cpp
+    thirdparty/imgui/imgui_draw.cpp
+    thirdparty/imgui/imgui_tables.cpp
+    thirdparty/imgui/imgui_widgets.cpp
+    # This backend doesn't force us to compile shaders in some funky way...
+    thirdparty/imgui/backends/imgui_impl_sdl3.cpp
+    thirdparty/imgui/backends/imgui_impl_sdlrenderer3.cpp
+)
+
+add_subdirectory(thirdparty/sdl)
+
+
+add_executable(darktune source/main.cpp ${IMGUI_SOURCES})
+
+target_include_directories(darktune PRIVATE
+    thirdparty/sdl/include
+    thirdparty/imgui
+)
+target_link_libraries(darktune PRIVATE SDL3-static)

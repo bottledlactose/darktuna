@@ -1,0 +1,5 @@
+# Exclude clangd cache
+.cache/
+
+# Exclude CMake build artifacts
+build/
