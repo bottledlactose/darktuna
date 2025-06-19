@@ -229,7 +229,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
 
     ImGui::Begin("Tuner");
 
-    if (g_detectedFreq > 20.0f && g_currentNote) {
+    if (g_currentNote) {
         ImGui::Text("Detected: %2.f Hz", g_detectedFreq);
         ImGui::Text("Note: %s (%.2f Hz)", g_currentNote->name, g_currentNote->freq);
         ImGui::Text("Cents off: %.2f", g_cents);
