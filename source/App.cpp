@@ -41,8 +41,14 @@ void App::StartAudioStream(int deviceIndex) {
     inputParams.suggestedLatency = Pa_GetDeviceInfo(deviceIndex)->defaultLowInputLatency;
     inputParams.hostApiSpecificStreamInfo = nullptr;
 
-    Pa_OpenStream(&mStream, &inputParams, nullptr, SAMPLE_RATE, FRAMES_PER_BUFFER, paNoFlag, AudioCallback, nullptr);
-    Pa_StartStream(mStream);
+    PaError open_error = Pa_OpenStream(&mStream, &inputParams, nullptr, SAMPLE_RATE, FRAMES_PER_BUFFER, paNoFlag, AudioCallback, nullptr);
+    if (open_error != paNoError) {
+        SDL_Log("Failed to open stream: %s", Pa_GetErrorText(open_error));
+    }
+    PaError start_error = Pa_StartStream(mStream);
+    if (start_error != paNoError) {
+        SDL_Log("Failed to open stream: %s", Pa_GetErrorText(start_error));
+    }
 }
 
 bool App::Initialize() {
@@ -247,7 +253,7 @@ void App::Draw() {
     ImGui::Text("Strength (RMS): %.6f\n", mSignalStrength);
 
     if (mCurrentNote) {
-        ImGui::Text("Detected: %2.f Hz", mDetectedFrequency);
+        ImGui::Text("Detected: %.2f Hz", mDetectedFrequency);
         ImGui::Text("Note: %s (%.2f Hz)", mCurrentNote->name, mCurrentNote->freq);
         ImGui::Text("Cents off: %.2f", mCentsOff);
 
