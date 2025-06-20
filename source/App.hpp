@@ -3,8 +3,9 @@
 #include <string>
 #include <unordered_map>
 #include <map>
-#include "portaudio.h"
 
+#include "SDL3/SDL_events.h"
+#include "portaudio.h"
 #include "Note.hpp"
 
 // Forward declarations
@@ -59,6 +60,7 @@ public:
 
     bool Initialize();
     void Shutdown();
+    void ProcessEvent(SDL_Event *event);
     
     void BeginFrame();
     void Update();

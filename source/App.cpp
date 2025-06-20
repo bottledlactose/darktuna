@@ -3,6 +3,7 @@
 #include "SDL3/SDL_init.h"
 #include "SDL3/SDL_log.h"
 #include "SDL3/SDL_render.h"
+#include "SDL3/SDL_timer.h"
 #include "SDL3/SDL_video.h"
 #include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_sdlrenderer3.h"
@@ -115,7 +116,12 @@ void App::Shutdown() {
     SDL_Quit();
 }
 
+void App::ProcessEvent(SDL_Event *event) {
+    ImGui_ImplSDL3_ProcessEvent(event);
+}
+
 void App::BeginFrame() {
+    SDL_Delay(10);
     ImGui_ImplSDLRenderer3_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
@@ -267,15 +273,13 @@ void App::Draw() {
         ImGui::PopStyleColor();
         ImGui::PopStyleVar();
 
+    } else if (!mStream) {
+        ImGui::Text("No active stream, please select an input device!");
     } else {
         ImGui::Text("Listening...");
     }
 
     ImGui::End();
-
-
-
-    //ImGui::OpenPopup("AboutPopup");
 }
 
 void App::EndFrame() {
