@@ -213,12 +213,7 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         if (rms > 0.01f) {
             g_detectedFreq = DetectFrequencyAutocorrelation(g_audioBuffer, BUFFER_SIZE, SAMPLE_RATE);
 
-            // Only listen to guitar noise
-            if (g_detectedFreq < 60.0f || g_detectedFreq > 500.0f) {
-                g_detectedFreq = 0.0f; // TODO: Skip UI update instead
-            }
-
-            if (g_detectedFreq > 20.0f) {
+            if (g_detectedFreq > 20.0f && g_detectedFreq < 500.0f) {
                 g_currentNote = &GetClosestNote(g_detectedFreq);
                 g_cents = GetCentsOff(g_detectedFreq, g_currentNote->freq);
             }
@@ -280,6 +275,13 @@ SDL_AppResult SDL_AppEvent(void *appstate, SDL_Event *event) {
 }
 
 void SDL_AppQuit(void *appstate, SDL_AppResult result) {
+
+    if (g_stream) {
+        Pa_StopStream(g_stream);
+        Pa_CloseStream(g_stream);
+    }
+    Pa_Terminate();
+
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
