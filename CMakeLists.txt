@@ -27,6 +27,8 @@ add_executable(darktune
     source/main.cpp
     source/App.hpp
     source/App.cpp
+    source/Tuner.hpp
+    source/Tuner.cpp
     ${IMGUI_SOURCES})
 
 target_include_directories(darktune PRIVATE

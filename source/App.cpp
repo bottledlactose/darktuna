@@ -7,6 +7,42 @@
 #include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_sdlrenderer3.h"
 #include "imgui.h"
+#include "portaudio.h"
+
+#include "Tuner.hpp"
+
+int App::AudioCallback(const void *input, void *, unsigned long frames,
+        const PaStreamCallbackTimeInfo *, PaStreamCallbackFlags, void *) {
+
+    App &instance = App::Get();
+    const float *in = (const float *)input;
+        for (unsigned long i = 0; i < frames; ++i) {
+        instance.mAudioBuffer[instance.mBufferIndex++] = *in++;
+        if (instance.mBufferIndex >= BUFFER_SIZE) {
+            instance.mBufferIndex = 0;
+            instance.mIsReadyForProcessing = true;
+        }
+    }
+    return paContinue;
+}
+
+void App::StartAudioStream(int deviceIndex) {
+    if (mStream) {
+        Pa_StopStream(mStream);
+        Pa_CloseStream(mStream);
+        mStream = nullptr;
+    }
+
+    PaStreamParameters inputParams;
+    inputParams.device = deviceIndex;
+    inputParams.channelCount = 1;
+    inputParams.sampleFormat = paFloat32;
+    inputParams.suggestedLatency = Pa_GetDeviceInfo(deviceIndex)->defaultLowInputLatency;
+    inputParams.hostApiSpecificStreamInfo = nullptr;
+
+    Pa_OpenStream(&mStream, &inputParams, nullptr, SAMPLE_RATE, FRAMES_PER_BUFFER, paNoFlag, AudioCallback, nullptr);
+    Pa_StartStream(mStream);
+}
 
 bool App::Initialize() {
 
@@ -51,7 +87,177 @@ bool App::Initialize() {
     ImGui_ImplSDL3_InitForSDLRenderer(mWindow, mRenderer);
     ImGui_ImplSDLRenderer3_Init(mRenderer);
 
-    // TODO: Move PortAudio initialization here
+    // Initialize PortAudio
+    Pa_Initialize();
+
+    mNumAudioDevices = Pa_GetDeviceCount();
+    UpdateAudioDevices();
 
     return true;
+}
+
+void App::Shutdown() {
+    if (mStream) {
+        Pa_StopStream(mStream);
+        Pa_CloseStream(mStream);
+    }
+    Pa_Terminate();
+
+    ImGui_ImplSDLRenderer3_Shutdown();
+    ImGui_ImplSDL3_Shutdown();
+    ImGui::DestroyContext();
+
+    SDL_DestroyRenderer(mRenderer);
+    SDL_DestroyWindow(mWindow);
+    SDL_Quit();
+}
+
+void App::BeginFrame() {
+    ImGui_ImplSDLRenderer3_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
+    ImGui::NewFrame();
+}
+
+void App::Update() {
+    if (mIsReadyForProcessing) {
+        // Calculate signal strength
+        mSignalStrength = 0.0f;
+
+        for (int i = 0; i < BUFFER_SIZE; ++i) {
+            mSignalStrength += mAudioBuffer[i] * mAudioBuffer[i];
+        }
+        mSignalStrength = sqrtf(mSignalStrength / BUFFER_SIZE);
+
+        // TODO: Make signal strength configurable
+        if (mSignalStrength > 0.0065f) {
+            mDetectedFrequency = Tuner::DetectFrequencyAutocorrelation(mAudioBuffer, BUFFER_SIZE, SAMPLE_RATE);
+
+            if (mDetectedFrequency > 20.0f && mDetectedFrequency < 500.0f) {
+                mCurrentNote = &Tuner::GetClosestNote(mDetectedFrequency);
+                mCentsOff = Tuner::GetCentsOff(mDetectedFrequency, mCurrentNote->freq);
+            }
+        }
+
+        mIsReadyForProcessing = false;
+    }
+}
+
+void App::Draw() {
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("Quit")) {
+                SDL_Event quit_event = { .type = SDL_EVENT_QUIT };
+                SDL_PushEvent(&quit_event);
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Edit")) {
+            // Placeholder for future options
+            ImGui::MenuItem("Settings", nullptr, false, false); // Disabled
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Help")) {
+            ImGui::MenuItem("About");
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+    }
+
+    ImGui::SetNextWindowPos(ImVec2(0, ImGui::GetFrameHeight()), ImGuiCond_Always);
+    ImVec2 windowSize = ImVec2(
+        io.DisplaySize.x,
+        io.DisplaySize.y - ImGui::GetFrameHeight()
+    );
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+
+    ImGui::Begin("MainContent", nullptr,
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoBringToFrontOnFocus |
+        ImGuiWindowFlags_NoCollapse);
+
+    ImGui::Text("Host APIs:");
+
+    for (auto pair : mAudioDevices) {
+        ImGui::Text(pair.first.c_str());
+    }
+
+    ImGui::Text("Input Device:");
+
+    // Hardcoding the host API for now...
+    for (auto pair : mAudioDevices["Windows WASAPI"]) {
+        bool isSelected = (mCurrentAudioDeviceIndex == pair.first);
+        if (ImGui::Selectable((pair.second + "##" + std::to_string(pair.first)).c_str(), isSelected)) {
+            mCurrentAudioDeviceIndex = pair.first;
+            StartAudioStream(mCurrentAudioDeviceIndex);
+        }
+    }
+
+    ImGui::Separator();
+
+    // Show RMS value
+    ImGui::Text("Strength (RMS): %.6f\n", mSignalStrength);
+
+    if (mCurrentNote) {
+        ImGui::Text("Detected: %2.f Hz", mDetectedFrequency);
+        ImGui::Text("Note: %s (%.2f Hz)", mCurrentNote->name, mCurrentNote->freq);
+        ImGui::Text("Cents off: %.2f", mCentsOff);
+
+        float needlePos = (mCentsOff + 50.0f) / 100.0f;
+        needlePos = fminf(fmaxf(needlePos, 0.0f), 1.0f);
+        ImGui::Text("Tuning");
+        ImGui::ProgressBar(needlePos, ImVec2(300, 20));
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 20)); // More vertical spacing
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 255)); // White text
+
+        // Scale text manually (like an H1 heading)
+        ImGui::SetWindowFontScale(3.5f); // H1-style scaling
+        ImVec2 textSize = ImGui::CalcTextSize(mCurrentNote->name);
+        float textX = (ImGui::GetContentRegionAvail().x - textSize.x) * 0.5f;
+
+        ImGui::SetCursorPosX(textX);
+        ImGui::Text("%s", mCurrentNote->name);
+
+        ImGui::SetWindowFontScale(1.0f); // Reset scale
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar();
+
+    } else {
+        ImGui::Text("Listening...");
+    }
+
+    ImGui::End();
+}
+
+void App::EndFrame() {
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::Render();
+    SDL_SetRenderScale(mRenderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
+    SDL_SetRenderDrawColorFloat(mRenderer, 0.0f, 0.0f, 0.0f, 1.0f);
+    SDL_RenderClear(mRenderer);
+    ImGui_ImplSDLRenderer3_RenderDrawData(ImGui::GetDrawData(), mRenderer);
+    SDL_RenderPresent(mRenderer);
+}
+
+void App::UpdateAudioDevices() {
+    for (int i = 0; i < mNumAudioDevices; ++i) {
+        const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
+        if (info->maxInputChannels > 0) {
+            const PaHostApiInfo *hostApi = Pa_GetHostApiInfo(info->hostApi);
+
+            if (hostApi) {
+                std::string hostApiName = hostApi->name;
+                std::string deviceName = info->name;
+
+                mAudioDevices[hostApiName][i] = deviceName;
+            }
+        }
+    }
 }
