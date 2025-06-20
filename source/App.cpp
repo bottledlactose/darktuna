@@ -55,7 +55,7 @@ bool App::Initialize() {
     float display_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
     SDL_WindowFlags window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
-    mWindow = SDL_CreateWindow("Darktuna", 800, 300, window_flags);
+    mWindow = SDL_CreateWindow("Darktuna", 600, 300, window_flags);
     if (!mWindow) {
         SDL_Log("Failed to create SDL window: %s", SDL_GetError());
         return false;
@@ -137,8 +137,7 @@ void App::Update() {
         }
         mSignalStrength = sqrtf(mSignalStrength / BUFFER_SIZE);
 
-        // TODO: Make signal strength configurable
-        if (mSignalStrength > 0.0065f) {
+        if (mSignalStrength > mRmsThreshold) {
             mDetectedFrequency = Tuner::DetectFrequencyAutocorrelation(mAudioBuffer, BUFFER_SIZE, SAMPLE_RATE);
 
             if (mDetectedFrequency > 20.0f && mDetectedFrequency < 500.0f) {
@@ -157,47 +156,43 @@ void App::Update() {
 
 void App::Draw() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
-    
-    if (ImGui::BeginPopupModal("About", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("Darktuna\nA guitar tuner using ImGui, SDL3, and PortAudio.");
-        ImGui::Separator();
-        if (ImGui::Button("OK")) {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-    }
-
-    if (mShowAboutMenu) {
-        ImGui::OpenPopup("About");
-        mShowAboutMenu = false;
-    }
-
-    if (ImGui::BeginPopupModal("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-
-        if (ImGui::BeginCombo("Host API", mHostApiName.c_str())) {
-            for (auto hostApi : mAudioDevices) {
-                bool isSelected = hostApi.first == mHostApiName;
-                if (ImGui::Selectable(hostApi.first.c_str(), isSelected)) {
-                    mHostApiName = hostApi.first;
-                }
-
-                if (isSelected) {
-                    ImGui::SetItemDefaultFocus();
-                }
-            }
-            ImGui::EndCombo();
-        }
-
-        ImGui::Separator();
-        if (ImGui::Button("OK")) {
-            ImGui::CloseCurrentPopup();
-        }
-        ImGui::EndPopup();
-    }
 
     if (mShowSettingsMenu) {
-        ImGui::OpenPopup("Settings");
-        mShowSettingsMenu = false;
+        if (ImGui::Begin("Settings")) {
+            if (ImGui::BeginCombo("Host API", mHostApiName.c_str())) {
+                for (auto hostApi : mAudioDevices) {
+                    bool isSelected = hostApi.first == mHostApiName;
+                    if (ImGui::Selectable(hostApi.first.c_str(), isSelected)) {
+                        mHostApiName = hostApi.first;
+                    }
+
+                    if (isSelected) {
+                        ImGui::SetItemDefaultFocus();
+                    }
+                }
+                ImGui::EndCombo();
+            }
+
+            // Slider for RMS threshold
+            ImGui::SliderFloat("RMS Threshold", &mRmsThreshold, 0.0f, 0.02f, "%.4f");
+
+            // Slider for Cents Tolerance
+            ImGui::SliderFloat("Cents Tolerance", &mCentsTolerance, 1.0f, 20.0f, "%.1f");
+
+            ImGui::Separator();
+            if (ImGui::Button("Close")) {
+                mShowSettingsMenu = false;
+            }
+
+            ImGui::SameLine();
+
+            if (ImGui::Button("Reset to defaults")) {
+                mRmsThreshold = 0.01f;
+                mCentsTolerance = 5.0f;
+            }
+
+            ImGui::End();
+        }
     }
 
     if (ImGui::BeginMainMenuBar()) {
@@ -225,10 +220,9 @@ void App::Draw() {
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("Help")) {
-            if (ImGui::MenuItem("About")) {
-                mShowAboutMenu = true;
-            }
+        if (ImGui::BeginMenu("About")) {
+            ImGui::MenuItem("Darktuna", nullptr, false, false);
+            ImGui::MenuItem("by bottledlactose", nullptr, false, false);
             ImGui::EndMenu();
         }
 
@@ -257,26 +251,20 @@ void App::Draw() {
         ImGui::Text("Note: %s (%.2f Hz)", mCurrentNote->name, mCurrentNote->freq);
         ImGui::Text("Cents off: %.2f", mCentsOff);
 
-        float needlePos = (mCentsOff + 50.0f) / 100.0f;
-        needlePos = fminf(fmaxf(needlePos, 0.0f), 1.0f);
-        ImGui::Text("Tuning");
-        ImGui::ProgressBar(needlePos, ImVec2(300, 20));
-
-        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 20)); // More vertical spacing
-        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 255)); // White text
-
-        // Scale text manually (like an H1 heading)
-        ImGui::SetWindowFontScale(3.5f); // H1-style scaling
-        ImVec2 textSize = ImGui::CalcTextSize(mCurrentNote->name);
-        float textX = (ImGui::GetContentRegionAvail().x - textSize.x) * 0.5f;
-
-        ImGui::SetCursorPosX(textX);
-        ImGui::Text("%s", mCurrentNote->name);
-
-        ImGui::SetWindowFontScale(1.0f); // Reset scale
-        ImGui::PopStyleColor();
-        ImGui::PopStyleVar();
-
+        // Color and tuning direction indicator
+        if (std::abs(mCentsOff) < mCentsTolerance) {
+            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 0, 255)); // Green
+            ImGui::Text("In tune");
+            ImGui::PopStyleColor();
+        } else if (mCentsOff > 0) {
+            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 165, 0, 255)); // Orange
+            ImGui::Text("Tune down (sharp)");
+            ImGui::PopStyleColor();
+        } else {
+            ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 165, 0, 255)); // Orange
+            ImGui::Text("Tune up (flat)");
+            ImGui::PopStyleColor();
+        }
     } else if (!mStream) {
         ImGui::Text("No active stream, please select an input device!");
     } else {

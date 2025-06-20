@@ -42,8 +42,11 @@ private:
     float mSignalStrength = 0.0f;
 
     // UI state
-    bool mShowAboutMenu = false;
     bool mShowSettingsMenu = false;
+
+    // User settings
+    float mRmsThreshold = 0.01f;  // Minimum signal strength to consider
+    float mCentsTolerance = 5.0f; // How close to the note before "in tune"
 
     App() = default;
     App(const App&) = delete;

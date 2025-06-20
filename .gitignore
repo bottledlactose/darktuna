@@ -1,5 +1,8 @@
 # Exclude clangd cache
 .cache/
 
+# Exclude VS Code workspace settings
+.vscode/
+
 # Exclude CMake build artifacts
 build/
