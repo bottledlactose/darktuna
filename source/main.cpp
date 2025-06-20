@@ -222,6 +222,29 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         g_readyForProcessing = false;
     }
 
+    if (ImGui::BeginMainMenuBar()) {
+        if (ImGui::BeginMenu("File")) {
+            if (ImGui::MenuItem("Quit")) {
+                SDL_Event quit_event = { .type = SDL_EVENT_QUIT };
+                SDL_PushEvent(&quit_event);
+            }
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Edit")) {
+            // Placeholder for future options
+            ImGui::MenuItem("Settings", nullptr, false, false); // Disabled
+            ImGui::EndMenu();
+        }
+
+        if (ImGui::BeginMenu("Help")) {
+            ImGui::MenuItem("About");
+            ImGui::EndMenu();
+        }
+
+        ImGui::EndMainMenuBar();
+    }
+
     ImGui::Begin("Tuner");
 
     if (g_currentNote) {
