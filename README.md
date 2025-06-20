@@ -1,6 +1,3 @@
-<p align="center">
-  <img src="https://raw.githubusercontent.com/bottledlactose/darktuna/refs/heads/trunk/images/logo.png" alt="Darktuna logo" width="250">
-</p>
 
 # Darktuna
 
