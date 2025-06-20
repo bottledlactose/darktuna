@@ -89,9 +89,12 @@ bool App::Initialize() {
 
     // Initialize PortAudio
     Pa_Initialize();
-
-    mNumAudioDevices = Pa_GetDeviceCount();
     UpdateAudioDevices();
+
+    // TODO: Load basic config file for settings
+    if (!mAudioDevices.empty()) {
+        mHostApiName = mAudioDevices.begin()->first;
+    }
 
     return true;
 }
@@ -144,24 +147,78 @@ void App::Update() {
 
 void App::Draw() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
+    
+    if (ImGui::BeginPopupModal("About", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("Darktune\nA guitar tuner using ImGui, SDL3, and PortAudio.");
+        ImGui::Separator();
+        if (ImGui::Button("OK")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if (mShowAboutMenu) {
+        ImGui::OpenPopup("About");
+        mShowAboutMenu = false;
+    }
+
+    if (ImGui::BeginPopupModal("Settings", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+
+        if (ImGui::BeginCombo("Host API", mHostApiName.c_str())) {
+            for (auto hostApi : mAudioDevices) {
+                bool isSelected = hostApi.first == mHostApiName;
+                if (ImGui::Selectable(hostApi.first.c_str(), isSelected)) {
+                    mHostApiName = hostApi.first;
+                }
+
+                if (isSelected) {
+                    ImGui::SetItemDefaultFocus();
+                }
+            }
+            ImGui::EndCombo();
+        }
+
+        ImGui::Separator();
+        if (ImGui::Button("OK")) {
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+
+    if (mShowSettingsMenu) {
+        ImGui::OpenPopup("Settings");
+        mShowSettingsMenu = false;
+    }
 
     if (ImGui::BeginMainMenuBar()) {
         if (ImGui::BeginMenu("File")) {
-            if (ImGui::MenuItem("Quit")) {
+
+            if (ImGui::MenuItem("Settings")) {
+                mShowSettingsMenu = true;
+            }
+
+            if (ImGui::MenuItem("Exit")) {
                 SDL_Event quit_event = { .type = SDL_EVENT_QUIT };
                 SDL_PushEvent(&quit_event);
             }
             ImGui::EndMenu();
         }
 
-        if (ImGui::BeginMenu("Edit")) {
-            // Placeholder for future options
-            ImGui::MenuItem("Settings", nullptr, false, false); // Disabled
+        if (ImGui::BeginMenu("Devices")) {
+            for (auto pair : mAudioDevices[mHostApiName]) {
+                bool isSelected = (mCurrentAudioDeviceIndex == pair.first);
+                if (ImGui::MenuItem((pair.second + "##" + std::to_string(pair.first)).c_str(), nullptr, isSelected)) {
+                    mCurrentAudioDeviceIndex = pair.first;
+                    StartAudioStream(mCurrentAudioDeviceIndex);
+                }
+            }
             ImGui::EndMenu();
         }
 
         if (ImGui::BeginMenu("Help")) {
-            ImGui::MenuItem("About");
+            if (ImGui::MenuItem("About")) {
+                mShowAboutMenu = true;
+            }
             ImGui::EndMenu();
         }
 
@@ -181,25 +238,6 @@ void App::Draw() {
         ImGuiWindowFlags_NoMove |
         ImGuiWindowFlags_NoBringToFrontOnFocus |
         ImGuiWindowFlags_NoCollapse);
-
-    ImGui::Text("Host APIs:");
-
-    for (auto pair : mAudioDevices) {
-        ImGui::Text(pair.first.c_str());
-    }
-
-    ImGui::Text("Input Device:");
-
-    // Hardcoding the host API for now...
-    for (auto pair : mAudioDevices["Windows WASAPI"]) {
-        bool isSelected = (mCurrentAudioDeviceIndex == pair.first);
-        if (ImGui::Selectable((pair.second + "##" + std::to_string(pair.first)).c_str(), isSelected)) {
-            mCurrentAudioDeviceIndex = pair.first;
-            StartAudioStream(mCurrentAudioDeviceIndex);
-        }
-    }
-
-    ImGui::Separator();
 
     // Show RMS value
     ImGui::Text("Strength (RMS): %.6f\n", mSignalStrength);
@@ -234,6 +272,10 @@ void App::Draw() {
     }
 
     ImGui::End();
+
+
+
+    //ImGui::OpenPopup("AboutPopup");
 }
 
 void App::EndFrame() {
@@ -247,7 +289,8 @@ void App::EndFrame() {
 }
 
 void App::UpdateAudioDevices() {
-    for (int i = 0; i < mNumAudioDevices; ++i) {
+    int numDevices = Pa_GetDeviceCount();
+    for (int i = 0; i < numDevices; ++i) {
         const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
         if (info->maxInputChannels > 0) {
             const PaHostApiInfo *hostApi = Pa_GetHostApiInfo(info->hostApi);

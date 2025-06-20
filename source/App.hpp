@@ -20,8 +20,6 @@ private:
     SDL_Window *mWindow;
     SDL_Renderer *mRenderer;
 
-    // Total amount of audio devices
-    int mNumAudioDevices = 0;
     // Current audio device index
     int mCurrentAudioDeviceIndex = -1;
     // Name of the currently selected audio API
@@ -41,13 +39,17 @@ private:
     float mCentsOff = 0.0f;
     float mSignalStrength = 0.0f;
 
+    // UI state
+    bool mShowAboutMenu = false;
+    bool mShowSettingsMenu = false;
+
     App() = default;
     App(const App&) = delete;
     App& operator=(const App&) = delete;
 
     static int AudioCallback(const void *input, void *, unsigned long frames,
         const PaStreamCallbackTimeInfo *, PaStreamCallbackFlags, void *);
-    void App::StartAudioStream(int deviceIndex);
+    void StartAudioStream(int deviceIndex);
 
 public:
     static App& Get() {
