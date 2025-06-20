@@ -17,6 +17,8 @@
 
 #include "portaudio.h"
 
+#include "App.hpp"
+
 // TODO: Maybe make these configurable?
 #define SAMPLE_RATE 44100
 #define FRAMES_PER_BUFFER 512
@@ -51,8 +53,8 @@ static float g_cents = 0.0f;
 static float g_rms = 0.0f;
 
 // SDL context
-static SDL_Window *g_window;
-static SDL_Renderer *g_renderer;
+// static SDL_Window *g_window;
+// static SDL_Renderer *g_renderer;
 
 float DetectFrequencyAutocorrelation(const float *buffer, int size, float sample_rate) {
     int best_lag = 0;
@@ -123,46 +125,8 @@ void StartStream(int device_index) {
 
 SDL_AppResult SDL_AppInit(void **appstate, int argc, char **argv) {
 
-    if (!SDL_Init(SDL_INIT_VIDEO)) {
-        fprintf(stderr, "Failed to initialize SDL: %s\n", SDL_GetError());
-        exit(EXIT_FAILURE);
-    }
-
-    float main_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
-    SDL_WindowFlags window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
-
-    g_window = SDL_CreateWindow("Darktune", 800, 600, window_flags);
-
-    if (!g_window) {
-        fprintf(stderr, "Failed to create window: %s\n", SDL_GetError());
-        exit(EXIT_FAILURE);
-    }
-
-    g_renderer = SDL_CreateRenderer(g_window, nullptr);
-
-    if (!g_renderer) {
-        fprintf(stderr, "Failed to create renderer: %s\n", SDL_GetError());
-        exit(EXIT_FAILURE);
-    }
-
-    SDL_SetRenderVSync(g_renderer, 1);
-    SDL_ShowWindow(g_window);
-
-    IMGUI_CHECKVERSION();
-    ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
-    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
-    // TODO: Enable gamepad support?
-
-    ImGui::StyleColorsDark();
-
-    // Setup scaling
-    ImGuiStyle& style = ImGui::GetStyle();
-    style.ScaleAllSizes(main_scale);        // Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
-    style.FontScaleDpi = main_scale;        // Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this unnecessary. We leave both here for documentation purpose)
-
-    ImGui_ImplSDL3_InitForSDLRenderer(g_window, g_renderer);
-    ImGui_ImplSDLRenderer3_Init(g_renderer);
+    App::Get();
+    App::Get().Initialize();
 
     // Initialize audio library
     Pa_Initialize();
@@ -245,7 +209,33 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         ImGui::EndMainMenuBar();
     }
 
-    ImGui::Begin("Tuner");
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    ImGui::SetNextWindowPos(ImVec2(0, ImGui::GetFrameHeight()), ImGuiCond_Always);
+    ImVec2 windowSize = ImVec2(
+        io.DisplaySize.x,
+        io.DisplaySize.y - ImGui::GetFrameHeight()
+    );
+    ImGui::SetNextWindowSize(windowSize, ImGuiCond_Always);
+
+    ImGui::Begin("MainContent", nullptr,
+        ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoResize |
+        ImGuiWindowFlags_NoMove |
+        ImGuiWindowFlags_NoBringToFrontOnFocus |
+        ImGuiWindowFlags_NoCollapse);
+
+    ImGui::Text("Input Device:");
+
+    for (int i = 0; i < g_deviceNames.size(); ++i) {
+        bool is_selected = (g_selectedDevice == g_deviceIndices[i]);
+        if (ImGui::Selectable((g_deviceNames[i] + "##" + std::to_string(i)).c_str(), is_selected)) {
+            g_selectedDevice = g_deviceIndices[i];
+            StartStream(g_selectedDevice);
+        }
+    }
+
+    ImGui::Separator();
 
     if (g_currentNote) {
         ImGui::Text("Detected: %2.f Hz", g_detectedFreq);
@@ -256,27 +246,32 @@ SDL_AppResult SDL_AppIterate(void *appstate) {
         needlePos = fminf(fmaxf(needlePos, 0.0f), 1.0f);
         ImGui::Text("Tuning");
         ImGui::ProgressBar(needlePos, ImVec2(300, 20));
+
+        ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 20)); // More vertical spacing
+        ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(255, 255, 255, 255)); // White text
+
+        // Scale text manually (like an H1 heading)
+        ImGui::SetWindowFontScale(3.5f); // H1-style scaling
+        ImVec2 textSize = ImGui::CalcTextSize(g_currentNote->name);
+        float textX = (ImGui::GetContentRegionAvail().x - textSize.x) * 0.5f;
+
+        ImGui::SetCursorPosX(textX);
+        ImGui::Text("%s", g_currentNote->name);
+
+        ImGui::SetWindowFontScale(1.0f); // Reset scale
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar();
+
     } else {
         ImGui::Text("Listening...");
     }
 
     ImGui::End();
 
-    // Create a testing window
-    ImGui::Begin("Devices");
+    // temp hack to just make it work while refactoring
+    SDL_Renderer *g_renderer = App::Get().GetRenderer();
 
-    for (int i = 0; i < g_deviceNames.size(); ++i) {
-        bool is_selected = (g_selectedDevice == g_deviceIndices[i]);
-        if (ImGui::Selectable((g_deviceNames[i] + "##" + std::to_string(i)).c_str(), is_selected)) {
-            g_selectedDevice = g_deviceIndices[i];
-            StartStream(g_selectedDevice);
-        }
-    }
-
-    ImGui::End();
-
-    ImGui::Render();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::Render();    
     SDL_SetRenderScale(g_renderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
     SDL_SetRenderDrawColorFloat(g_renderer, 0.0f, 0.0f, 0.0f, 1.0f);
     SDL_RenderClear(g_renderer);
@@ -308,6 +303,10 @@ void SDL_AppQuit(void *appstate, SDL_AppResult result) {
     ImGui_ImplSDLRenderer3_Shutdown();
     ImGui_ImplSDL3_Shutdown();
     ImGui::DestroyContext();
+
+    // temp hack to just make it work while refactoring
+    SDL_Renderer *g_renderer = App::Get().GetRenderer();
+    SDL_Window *g_window = App::Get().GetWindow();
 
     SDL_DestroyRenderer(g_renderer);
     SDL_DestroyWindow(g_window);
