@@ -286,6 +286,8 @@ void App::EndFrame() {
 
 void App::UpdateAudioDevices() {
     mNumAudioDevices = Pa_GetDeviceCount();
+    mAudioDevices.clear();
+
     for (int i = 0; i < mNumAudioDevices; ++i) {
         const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
         if (info->maxInputChannels > 0) {
