@@ -149,6 +149,10 @@ void App::Update() {
 
         mIsReadyForProcessing = false;
     }
+
+    if (mNumAudioDevices != Pa_GetDeviceCount()) {
+        UpdateAudioDevices();
+    }
 }
 
 void App::Draw() {
@@ -293,8 +297,8 @@ void App::EndFrame() {
 }
 
 void App::UpdateAudioDevices() {
-    int numDevices = Pa_GetDeviceCount();
-    for (int i = 0; i < numDevices; ++i) {
+    mNumAudioDevices = Pa_GetDeviceCount();
+    for (int i = 0; i < mNumAudioDevices; ++i) {
         const PaDeviceInfo* info = Pa_GetDeviceInfo(i);
         if (info->maxInputChannels > 0) {
             const PaHostApiInfo *hostApi = Pa_GetHostApiInfo(info->hostApi);

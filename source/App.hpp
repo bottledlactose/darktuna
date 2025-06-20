@@ -21,6 +21,7 @@ private:
     SDL_Window *mWindow;
     SDL_Renderer *mRenderer;
 
+    int mNumAudioDevices = 0;
     // Current audio device index
     int mCurrentAudioDeviceIndex = -1;
     // Name of the currently selected audio API
