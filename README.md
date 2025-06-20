@@ -1,11 +1,11 @@
-# Darktune
+<p align="center">
+  <img src="https://raw.githubusercontent.com/bottledlactose/darktuna/refs/heads/trunk/images/logo.png" alt="Darktuna logo" width="250">
+</p>
+
+# Darktuna
 
 A high-precision, real-time guitar tuner built with C++, SDL3, ImGui and PortAudio.
 It analyzes audio input to detect frequency, estimate tuning accuracy, and guide you visually with intuitive feedback.
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/bottledlactose/darktuna/refs/heads/trunk/images/logo.png" alt="Darktune logo" width="128">
-</p>
 
 ## Features
 
