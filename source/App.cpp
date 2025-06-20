@@ -55,7 +55,7 @@ bool App::Initialize() {
     float display_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
     SDL_WindowFlags window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
-    mWindow = SDL_CreateWindow("Darktune", 800, 300, window_flags);
+    mWindow = SDL_CreateWindow("Darktuna", 800, 300, window_flags);
     if (!mWindow) {
         SDL_Log("Failed to create SDL window: %s", SDL_GetError());
         return false;
@@ -159,7 +159,7 @@ void App::Draw() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     
     if (ImGui::BeginPopupModal("About", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::Text("Darktune\nA guitar tuner using ImGui, SDL3, and PortAudio.");
+        ImGui::Text("Darktuna\nA guitar tuner using ImGui, SDL3, and PortAudio.");
         ImGui::Separator();
         if (ImGui::Button("OK")) {
             ImGui::CloseCurrentPopup();

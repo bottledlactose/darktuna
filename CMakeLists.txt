@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12)
-project(darktune VERSION 1.0.0 LANGUAGES CXX)
+project(darktuna VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -23,7 +23,7 @@ add_subdirectory(thirdparty/sdl)
 set(PA_BUILD_SHARED_LIBS OFF CACHE BOOL "Build static PortAudio library")
 add_subdirectory(thirdparty/portaudio)
 
-add_executable(darktune
+add_executable(darktuna
     source/main.cpp
     source/App.hpp
     source/App.cpp
@@ -31,9 +31,9 @@ add_executable(darktune
     source/Tuner.cpp
     ${IMGUI_SOURCES})
 
-target_include_directories(darktune PRIVATE
+target_include_directories(darktuna PRIVATE
     thirdparty/sdl/include
     thirdparty/imgui
     thirdparty/portaudio/include
 )
-target_link_libraries(darktune PRIVATE SDL3-static portaudio)
+target_link_libraries(darktuna PRIVATE SDL3-static portaudio)
