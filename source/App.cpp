@@ -279,19 +279,27 @@ void App::Draw() {
         ImGui::Text("Listening...");
     }
 
-    static int tuningIndex = 0;
-    ImGui::Combo("Tuning", &tuningIndex, 
-        [](void* data, int idx, const char** out_text) {
-            *out_text = kGuitarTunings[idx].first.c_str();
-            return true;
-        }, nullptr, static_cast<int>(kGuitarTunings.size()));
+    if (!kGuitarTunings.empty()) {
+        static int tuningIndex = 0;
+        ImGui::Combo("Tuning", &tuningIndex, 
+            [](void* data, int idx, const char** out_text) {
+                *out_text = kGuitarTunings[idx].first.c_str();
+                return true;
+            }, nullptr, static_cast<int>(kGuitarTunings.size()));
 
-    // Display note guide
-    const auto& selectedTuning = kGuitarTunings[tuningIndex];
-    ImGui::Text("Target Notes:");
-    for (const auto& note : selectedTuning.second) {
-        ImGui::SameLine();
-        ImGui::Text("%s", note.c_str());
+        // Display note guide
+        const auto& selectedTuning = kGuitarTunings[tuningIndex];
+        ImGui::Text("Target Notes:");
+        for (const auto& note : selectedTuning.second) {
+            ImGui::SameLine();
+            if (mCurrentNote && mCurrentNote->name == note) {
+                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 255, 255)); // Cyan
+                ImGui::Text("%s", note.c_str());
+                ImGui::PopStyleColor();
+            } else {
+                ImGui::Text("%s", note.c_str());
+            }
+        }
     }
 
     ImGui::End();
