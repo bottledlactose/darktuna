@@ -22,8 +22,10 @@ float Tuner::DetectFrequencyAutocorrelation(const float *buffer, int size, float
 }
 
 const Note& Tuner::GetClosestNote(float freq) {
+    const auto& notes = GetChromaticNotes();
     const Note* closest = &notes[0];
     float minDiff = fabsf(freq - closest->freq);
+    
     for (const auto& note : notes) {
         float diff = fabsf(freq - note.freq);
         if (diff < minDiff) {

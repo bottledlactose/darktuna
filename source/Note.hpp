@@ -1,12 +1,27 @@
 #pragma once
 
-// Note definitions
+#include <vector>
+#include <string>
+
 struct Note {
-    const char* name;
+    std::string name;
     float freq;
 };
 
-const Note notes[] = {
-    {"E2", 82.41}, {"A2", 110.00}, {"D3", 146.83},
-    {"G3", 196.00}, {"B3", 246.94}, {"E4", 329.63},
-};
+inline std::vector<Note> GenerateChromaticNotes() {
+    std::vector<Note> chromaticNotes;
+    static const char* names[] = { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+
+    for (int octave = 0; octave <= 8; ++octave) {
+        for (int i = 0; i < 12; ++i) {
+            float freq = 440.0f * powf(2.0f, ((octave * 12 + i - 57) / 12.0f)); // A4 = MIDI 69
+            chromaticNotes.push_back({ names[i] + std::to_string(octave), freq });
+        }
+    }
+    return chromaticNotes;
+}
+
+inline const std::vector<Note>& GetChromaticNotes() {
+    static std::vector<Note> notes = GenerateChromaticNotes();
+    return notes;
+}

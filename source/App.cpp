@@ -254,7 +254,7 @@ void App::Draw() {
 
     if (mCurrentNote) {
         ImGui::Text("Detected: %.2f Hz", mDetectedFrequency);
-        ImGui::Text("Note: %s (%.2f Hz)", mCurrentNote->name, mCurrentNote->freq);
+        ImGui::Text("Note: %s (%.2f Hz)", mCurrentNote->name.c_str(), mCurrentNote->freq);
         ImGui::Text("Cents off: %.2f", mCentsOff);
 
         // Color and tuning direction indicator
