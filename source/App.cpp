@@ -11,6 +11,7 @@
 #include "portaudio.h"
 
 #include "Tuner.hpp"
+#include "Tunings.hpp"
 
 int App::AudioCallback(const void *input, void *, unsigned long frames,
         const PaStreamCallbackTimeInfo *, PaStreamCallbackFlags, void *) {
@@ -276,6 +277,21 @@ void App::Draw() {
         ImGui::Text("No active stream, please select an input device!");
     } else {
         ImGui::Text("Listening...");
+    }
+
+    static int tuningIndex = 0;
+    ImGui::Combo("Tuning", &tuningIndex, 
+        [](void* data, int idx, const char** out_text) {
+            *out_text = kGuitarTunings[idx].first.c_str();
+            return true;
+        }, nullptr, static_cast<int>(kGuitarTunings.size()));
+
+    // Display note guide
+    const auto& selectedTuning = kGuitarTunings[tuningIndex];
+    ImGui::Text("Target Notes:");
+    for (const auto& note : selectedTuning.second) {
+        ImGui::SameLine();
+        ImGui::Text("%s", note.c_str());
     }
 
     ImGui::End();
