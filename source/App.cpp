@@ -144,9 +144,10 @@ void App::Update() {
         mSignalStrength = sqrtf(mSignalStrength / BUFFER_SIZE);
 
         if (mSignalStrength > mRmsThreshold) {
-            mDetectedFrequency = Tuner::DetectFrequencyAutocorrelation(mAudioBuffer, BUFFER_SIZE, SAMPLE_RATE);
+            float detectedFrequency = Tuner::DetectFrequencyAutocorrelation(mAudioBuffer, BUFFER_SIZE, SAMPLE_RATE);
 
-            if (mDetectedFrequency > 20.0f && mDetectedFrequency < 500.0f) {
+            if (detectedFrequency > 20.0f && detectedFrequency < 500.0f) {
+                mDetectedFrequency = detectedFrequency;
                 mCurrentNote = &Tuner::GetClosestNote(mDetectedFrequency);
                 mCentsOff = Tuner::GetCentsOff(mDetectedFrequency, mCurrentNote->freq);
             }
