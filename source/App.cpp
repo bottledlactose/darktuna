@@ -41,6 +41,55 @@ int App::AudioCallback(const void *input, void *, unsigned long frames,
     return paContinue;
 }
 
+void ApplyDarkboxTheme(ImGuiStyle& style) {
+    ImVec4 orange = ImVec4(0.839f, 0.365f, 0.055f, 1.0f); // Gruvbox orange (#d65d0e)
+
+    // Window and Popup Backgrounds
+    style.Colors[ImGuiCol_WindowBg]   = ImVec4(0.06f, 0.06f, 0.06f, 1.0f);  // Main window background
+    style.Colors[ImGuiCol_PopupBg]    = ImVec4(0.10f, 0.10f, 0.10f, 1.0f);  // Popups, combo dropdowns
+
+    // Menu Bar
+    style.Colors[ImGuiCol_MenuBarBg] = orange;
+
+    // Title Bars
+    style.Colors[ImGuiCol_TitleBg]           = ImVec4(0.12f, 0.12f, 0.12f, 1.0f);
+    style.Colors[ImGuiCol_TitleBgActive]     = orange;
+    style.Colors[ImGuiCol_TitleBgCollapsed]  = ImVec4(0.10f, 0.10f, 0.10f, 1.0f);
+
+    // Headers (used in menus, collapsing sections, etc.)
+    style.Colors[ImGuiCol_Header]        = ImVec4(0.729f, 0.282f, 0.0f, 1.0f);
+    style.Colors[ImGuiCol_HeaderHovered] = orange;
+    style.Colors[ImGuiCol_HeaderActive]  = ImVec4(0.682f, 0.294f, 0.0f, 1.0f);
+
+    // Frames (ComboBox, InputText, Sliders, ColorEdit, etc.)
+    style.Colors[ImGuiCol_FrameBg]         = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
+    style.Colors[ImGuiCol_FrameBgHovered]  = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);
+    style.Colors[ImGuiCol_FrameBgActive]   = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+
+    // Sliders
+    style.Colors[ImGuiCol_SliderGrab]        = orange;
+    style.Colors[ImGuiCol_SliderGrabActive]  = ImVec4(0.9f, 0.45f, 0.1f, 1.0f);
+
+    // Buttons
+    style.Colors[ImGuiCol_Button]         = ImVec4(0.25f, 0.25f, 0.25f, 1.0f); // Neutral gray
+    style.Colors[ImGuiCol_ButtonHovered]  = orange;
+    style.Colors[ImGuiCol_ButtonActive]   = ImVec4(0.682f, 0.294f, 0.0f, 1.0f);
+
+    // Scrollbars
+    style.Colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+    style.Colors[ImGuiCol_ScrollbarGrab]         = orange;
+    style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(1.0f, 0.5f, 0.1f, 1.0f);
+
+    // Text
+    style.Colors[ImGuiCol_Text]          = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);  // Normal text
+    style.Colors[ImGuiCol_TextDisabled]  = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);  // Disabled/grayed-out
+
+    // Misc
+    style.Colors[ImGuiCol_CheckMark] = orange;
+    style.Colors[ImGuiCol_Separator] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+    style.Colors[ImGuiCol_Border]    = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+}
+
 void App::StartAudioStream(int deviceIndex) {
     if (mStream) {
         Pa_StopStream(mStream);
@@ -111,20 +160,9 @@ bool App::Initialize() {
     ImGuiStyle& style = ImGui::GetStyle();
     style.ScaleAllSizes(display_scale);
     style.FontScaleDpi = display_scale;
+
+    ApplyDarkboxTheme(style);
     
-    style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.839f, 0.365f, 0.055f, 1.0f);
-    style.Colors[ImGuiCol_Header]        = ImVec4(0.729f, 0.282f, 0.0f, 1.0f);  // default
-    style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.839f, 0.365f, 0.055f, 1.0f); // hovered (#d65d0e)
-    style.Colors[ImGuiCol_HeaderActive]  = ImVec4(0.682f, 0.294f, 0.0f, 1.0f);  // active (pressed)
-
-    style.Colors[ImGuiCol_FrameBg]        = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
-    style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);
-    style.Colors[ImGuiCol_FrameBgActive]  = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
-
-    style.Colors[ImGuiCol_Button]        = ImVec4(0.20f, 0.25f, 0.30f, 1.0f); // dark blue-gray
-    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.839f, 0.365f, 0.055f, 1.0f); // Gruvbox orange
-    style.Colors[ImGuiCol_ButtonActive]  = ImVec4(0.682f, 0.294f, 0.0f, 1.0f); // darker orange
-
     ImGui_ImplSDL3_InitForSDLRenderer(mWindow, mRenderer);
     ImGui_ImplSDLRenderer3_Init(mRenderer);
 
@@ -284,6 +322,19 @@ void App::Draw() {
         ImGuiWindowFlags_NoBringToFrontOnFocus |
         ImGuiWindowFlags_NoCollapse);
 
+    float content_width = 400.0f;
+    float content_height = 120.0f;
+
+    // Compute top-left corner for centered layout
+    ImVec2 content_pos = ImVec2(
+        (windowSize.x - content_width) * 0.5f,
+        (windowSize.y - content_height) * 0.5f
+    );
+
+    // 4. Move the ImGui cursor to the center position
+    ImGui::SetCursorPos(content_pos);
+    ImGui::BeginChild("CenterContent", ImVec2(content_width, content_height), false, ImGuiWindowFlags_NoScrollbar);
+
     // Show RMS value
     ImGui::Text("Strength (RMS): %.6f\n", mSignalStrength);
 
@@ -335,6 +386,7 @@ void App::Draw() {
         }
     }
 
+    ImGui::EndChild();
     ImGui::End();
 }
 
