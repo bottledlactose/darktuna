@@ -84,6 +84,8 @@ bool App::Initialize() {
     ImGuiIO& io = ImGui::GetIO(); (void)io;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
+    io.IniFilename = nullptr;
+    io.LogFilename = nullptr;
 
     ImGui::StyleColorsDark();
 
