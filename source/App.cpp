@@ -88,6 +88,15 @@ void ApplyDarkboxTheme(ImGuiStyle& style) {
     style.Colors[ImGuiCol_CheckMark] = orange;
     style.Colors[ImGuiCol_Separator] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
     style.Colors[ImGuiCol_Border]    = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+
+    // Resize
+    style.Colors[ImGuiCol_ResizeGrip]         = ImVec4(0.25f, 0.25f, 0.25f, 1.0f); // Default state
+    style.Colors[ImGuiCol_ResizeGripHovered]  = orange;                           // Hovered
+    style.Colors[ImGuiCol_ResizeGripActive]   = ImVec4(0.682f, 0.294f, 0.0f, 1.0f); // Active
+
+    // Border
+    style.Colors[ImGuiCol_Border]        = ImVec4(0.25f, 0.25f, 0.25f, 1.0f); // Normal edge
+    style.Colors[ImGuiCol_BorderShadow]  = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);    // Drop shadow — set to 0 to disable
 }
 
 void App::StartAudioStream(int deviceIndex) {
