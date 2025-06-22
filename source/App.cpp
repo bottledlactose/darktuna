@@ -13,6 +13,19 @@
 #include "Tuner.hpp"
 #include "Tunings.hpp"
 
+#include "logo.h"
+
+SDL_Surface* CreateSurfaceFromIcon() {
+    SDL_Surface* surface = SDL_CreateSurfaceFrom(
+        LOGO_WIDTH,               // width
+        LOGO_HEIGHT,              // height
+        SDL_PIXELFORMAT_RGBA32,   // pixel format
+        (void*)logo_data,         // pixel data
+        LOGO_WIDTH * 4            // pitch (width * 4 bytes per pixel)
+    );
+    return surface;
+}
+
 int App::AudioCallback(const void *input, void *, unsigned long frames,
         const PaStreamCallbackTimeInfo *, PaStreamCallbackFlags, void *) {
 
@@ -67,6 +80,11 @@ bool App::Initialize() {
         SDL_Log("Failed to create SDL window: %s", SDL_GetError());
         return false;
     }
+
+    // Set application icon
+    SDL_Surface* icon = CreateSurfaceFromIcon();
+    SDL_SetWindowIcon(mWindow, icon);
+    SDL_DestroySurface(icon);
 
     mRenderer = SDL_CreateRenderer(mWindow, nullptr);
     if (!mRenderer) {
