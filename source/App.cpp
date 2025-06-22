@@ -41,63 +41,7 @@ int App::AudioCallback(const void *input, void *, unsigned long frames,
     return paContinue;
 }
 
-void ApplyDarkboxTheme(ImGuiStyle& style) {
-    ImVec4 orange = ImVec4(0.839f, 0.365f, 0.055f, 1.0f); // Gruvbox orange (#d65d0e)
-
-    // Window and Popup Backgrounds
-    style.Colors[ImGuiCol_WindowBg]   = ImVec4(0.06f, 0.06f, 0.06f, 1.0f);  // Main window background
-    style.Colors[ImGuiCol_PopupBg]    = ImVec4(0.10f, 0.10f, 0.10f, 1.0f);  // Popups, combo dropdowns
-
-    // Menu Bar
-    style.Colors[ImGuiCol_MenuBarBg] = orange;
-
-    // Title Bars
-    style.Colors[ImGuiCol_TitleBg]           = ImVec4(0.12f, 0.12f, 0.12f, 1.0f);
-    style.Colors[ImGuiCol_TitleBgActive]     = orange;
-    style.Colors[ImGuiCol_TitleBgCollapsed]  = ImVec4(0.10f, 0.10f, 0.10f, 1.0f);
-
-    // Headers (used in menus, collapsing sections, etc.)
-    style.Colors[ImGuiCol_Header]        = ImVec4(0.729f, 0.282f, 0.0f, 1.0f);
-    style.Colors[ImGuiCol_HeaderHovered] = orange;
-    style.Colors[ImGuiCol_HeaderActive]  = ImVec4(0.682f, 0.294f, 0.0f, 1.0f);
-
-    // Frames (ComboBox, InputText, Sliders, ColorEdit, etc.)
-    style.Colors[ImGuiCol_FrameBg]         = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
-    style.Colors[ImGuiCol_FrameBgHovered]  = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);
-    style.Colors[ImGuiCol_FrameBgActive]   = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
-
-    // Sliders
-    style.Colors[ImGuiCol_SliderGrab]        = orange;
-    style.Colors[ImGuiCol_SliderGrabActive]  = ImVec4(0.9f, 0.45f, 0.1f, 1.0f);
-
-    // Buttons
-    style.Colors[ImGuiCol_Button]         = ImVec4(0.25f, 0.25f, 0.25f, 1.0f); // Neutral gray
-    style.Colors[ImGuiCol_ButtonHovered]  = orange;
-    style.Colors[ImGuiCol_ButtonActive]   = ImVec4(0.682f, 0.294f, 0.0f, 1.0f);
-
-    // Scrollbars
-    style.Colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
-    style.Colors[ImGuiCol_ScrollbarGrab]         = orange;
-    style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(1.0f, 0.5f, 0.1f, 1.0f);
-
-    // Text
-    style.Colors[ImGuiCol_Text]          = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);  // Normal text
-    style.Colors[ImGuiCol_TextDisabled]  = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);  // Disabled/grayed-out
-
-    // Misc
-    style.Colors[ImGuiCol_CheckMark] = orange;
-    style.Colors[ImGuiCol_Separator] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
-    style.Colors[ImGuiCol_Border]    = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
-
-    // Resize
-    style.Colors[ImGuiCol_ResizeGrip]         = ImVec4(0.25f, 0.25f, 0.25f, 1.0f); // Default state
-    style.Colors[ImGuiCol_ResizeGripHovered]  = orange;                           // Hovered
-    style.Colors[ImGuiCol_ResizeGripActive]   = ImVec4(0.682f, 0.294f, 0.0f, 1.0f); // Active
-
-    // Border
-    style.Colors[ImGuiCol_Border]        = ImVec4(0.25f, 0.25f, 0.25f, 1.0f); // Normal edge
-    style.Colors[ImGuiCol_BorderShadow]  = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);    // Drop shadow — set to 0 to disable
-}
+void ApplyDarkboxTheme(ImGuiStyle& style);
 
 void App::StartAudioStream(int deviceIndex) {
     if (mStream) {
@@ -386,11 +330,11 @@ void App::Draw() {
         for (const auto& note : selectedTuning.second) {
             ImGui::SameLine();
             if (mCurrentNote && mCurrentNote->name == note) {
-                ImGui::PushStyleColor(ImGuiCol_Text, IM_COL32(0, 255, 255, 255)); // Cyan
+                ImGui::Text("%s", note.c_str());
+            } else {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
                 ImGui::Text("%s", note.c_str());
                 ImGui::PopStyleColor();
-            } else {
-                ImGui::Text("%s", note.c_str());
             }
         }
     }
@@ -426,4 +370,62 @@ void App::UpdateAudioDevices() {
             }
         }
     }
+}
+
+void ApplyDarkboxTheme(ImGuiStyle& style) {
+    ImVec4 orange = ImVec4(0.839f, 0.365f, 0.055f, 1.0f); // Gruvbox orange (#d65d0e)
+
+    // Window and Popup Backgrounds
+    style.Colors[ImGuiCol_WindowBg]   = ImVec4(0.06f, 0.06f, 0.06f, 1.0f);  // Main window background
+    style.Colors[ImGuiCol_PopupBg]    = ImVec4(0.10f, 0.10f, 0.10f, 1.0f);  // Popups, combo dropdowns
+
+    // Menu Bar
+    style.Colors[ImGuiCol_MenuBarBg] = orange;
+
+    // Title Bars
+    style.Colors[ImGuiCol_TitleBg]           = ImVec4(0.12f, 0.12f, 0.12f, 1.0f);
+    style.Colors[ImGuiCol_TitleBgActive]     = orange;
+    style.Colors[ImGuiCol_TitleBgCollapsed]  = ImVec4(0.10f, 0.10f, 0.10f, 1.0f);
+
+    // Headers (used in menus, collapsing sections, etc.)
+    style.Colors[ImGuiCol_Header]        = ImVec4(0.729f, 0.282f, 0.0f, 1.0f);
+    style.Colors[ImGuiCol_HeaderHovered] = orange;
+    style.Colors[ImGuiCol_HeaderActive]  = ImVec4(0.682f, 0.294f, 0.0f, 1.0f);
+
+    // Frames (ComboBox, InputText, Sliders, ColorEdit, etc.)
+    style.Colors[ImGuiCol_FrameBg]         = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
+    style.Colors[ImGuiCol_FrameBgHovered]  = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);
+    style.Colors[ImGuiCol_FrameBgActive]   = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+
+    // Sliders
+    style.Colors[ImGuiCol_SliderGrab]        = orange;
+    style.Colors[ImGuiCol_SliderGrabActive]  = ImVec4(0.9f, 0.45f, 0.1f, 1.0f);
+
+    // Buttons
+    style.Colors[ImGuiCol_Button]         = ImVec4(0.25f, 0.25f, 0.25f, 1.0f); // Neutral gray
+    style.Colors[ImGuiCol_ButtonHovered]  = orange;
+    style.Colors[ImGuiCol_ButtonActive]   = ImVec4(0.682f, 0.294f, 0.0f, 1.0f);
+
+    // Scrollbars
+    style.Colors[ImGuiCol_ScrollbarBg]           = ImVec4(0.1f, 0.1f, 0.1f, 1.0f);
+    style.Colors[ImGuiCol_ScrollbarGrab]         = orange;
+    style.Colors[ImGuiCol_ScrollbarGrabHovered]  = ImVec4(1.0f, 0.5f, 0.1f, 1.0f);
+
+    // Text
+    style.Colors[ImGuiCol_Text]          = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);  // Normal text
+    style.Colors[ImGuiCol_TextDisabled]  = ImVec4(0.5f, 0.5f, 0.5f, 1.0f);  // Disabled/grayed-out
+
+    // Misc
+    style.Colors[ImGuiCol_CheckMark] = orange;
+    style.Colors[ImGuiCol_Separator] = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+    style.Colors[ImGuiCol_Border]    = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+
+    // Resize
+    style.Colors[ImGuiCol_ResizeGrip]         = ImVec4(0.25f, 0.25f, 0.25f, 1.0f); // Default state
+    style.Colors[ImGuiCol_ResizeGripHovered]  = orange;                           // Hovered
+    style.Colors[ImGuiCol_ResizeGripActive]   = ImVec4(0.682f, 0.294f, 0.0f, 1.0f); // Active
+
+    // Border
+    style.Colors[ImGuiCol_Border]        = ImVec4(0.25f, 0.25f, 0.25f, 1.0f); // Normal edge
+    style.Colors[ImGuiCol_BorderShadow]  = ImVec4(0.0f, 0.0f, 0.0f, 0.0f);    // Drop shadow — set to 0 to disable
 }
