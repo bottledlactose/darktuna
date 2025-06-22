@@ -93,6 +93,19 @@ bool App::Initialize() {
     ImGuiStyle& style = ImGui::GetStyle();
     style.ScaleAllSizes(display_scale);
     style.FontScaleDpi = display_scale;
+    
+    style.Colors[ImGuiCol_MenuBarBg] = ImVec4(0.839f, 0.365f, 0.055f, 1.0f);
+    style.Colors[ImGuiCol_Header]        = ImVec4(0.729f, 0.282f, 0.0f, 1.0f);  // default
+    style.Colors[ImGuiCol_HeaderHovered] = ImVec4(0.839f, 0.365f, 0.055f, 1.0f); // hovered (#d65d0e)
+    style.Colors[ImGuiCol_HeaderActive]  = ImVec4(0.682f, 0.294f, 0.0f, 1.0f);  // active (pressed)
+
+    style.Colors[ImGuiCol_FrameBg]        = ImVec4(0.15f, 0.15f, 0.15f, 1.0f);
+    style.Colors[ImGuiCol_FrameBgHovered] = ImVec4(0.20f, 0.20f, 0.20f, 1.0f);
+    style.Colors[ImGuiCol_FrameBgActive]  = ImVec4(0.25f, 0.25f, 0.25f, 1.0f);
+
+    style.Colors[ImGuiCol_Button]        = ImVec4(0.20f, 0.25f, 0.30f, 1.0f); // dark blue-gray
+    style.Colors[ImGuiCol_ButtonHovered] = ImVec4(0.839f, 0.365f, 0.055f, 1.0f); // Gruvbox orange
+    style.Colors[ImGuiCol_ButtonActive]  = ImVec4(0.682f, 0.294f, 0.0f, 1.0f); // darker orange
 
     ImGui_ImplSDL3_InitForSDLRenderer(mWindow, mRenderer);
     ImGui_ImplSDLRenderer3_Init(mRenderer);
