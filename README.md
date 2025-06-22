@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/bottledlactose/darktuna/refs/heads/develop/images/logo-128.png" alt="Darktune logo" width="128">
+  <img src="https://raw.githubusercontent.com/bottledlactose/darktuna/refs/heads/trunk/images/logo-128.png" alt="Darktune logo" width="128">
 </p>
 
 # Darktuna
