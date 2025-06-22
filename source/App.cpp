@@ -276,7 +276,7 @@ void App::Draw() {
         ImGuiWindowFlags_NoCollapse);
 
     float content_width = 400.0f;
-    float content_height = 120.0f;
+    float content_height = 180.0f;
 
     // Compute top-left corner for centered layout
     ImVec2 content_pos = ImVec2(
@@ -287,6 +287,31 @@ void App::Draw() {
     // 4. Move the ImGui cursor to the center position
     ImGui::SetCursorPos(content_pos);
     ImGui::BeginChild("CenterContent", ImVec2(content_width, content_height), false, ImGuiWindowFlags_NoScrollbar);
+
+    if (!kGuitarTunings.empty()) {
+        static int tuningIndex = 0;
+        ImGui::Combo("Tuning", &tuningIndex, 
+            [](void* data, int idx, const char** out_text) {
+                *out_text = kGuitarTunings[idx].first.c_str();
+                return true;
+            }, nullptr, static_cast<int>(kGuitarTunings.size()));
+
+        // Display note guide
+        const auto& selectedTuning = kGuitarTunings[tuningIndex];
+        ImGui::Text("Target Notes:");
+        for (const auto& note : selectedTuning.second) {
+            ImGui::SameLine();
+            if (mCurrentNote && mCurrentNote->name == note) {
+                ImGui::Text("%s", note.c_str());
+            } else {
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
+                ImGui::Text("%s", note.c_str());
+                ImGui::PopStyleColor();
+            }
+        }
+
+        ImGui::Dummy(ImVec2(10, 10));
+    }
 
     // Show RMS value
     ImGui::Text("Strength (RMS): %.6f\n", mSignalStrength);
@@ -314,29 +339,6 @@ void App::Draw() {
         ImGui::Text("No active stream, please select an input device!");
     } else {
         ImGui::Text("Listening...");
-    }
-
-    if (!kGuitarTunings.empty()) {
-        static int tuningIndex = 0;
-        ImGui::Combo("Tuning", &tuningIndex, 
-            [](void* data, int idx, const char** out_text) {
-                *out_text = kGuitarTunings[idx].first.c_str();
-                return true;
-            }, nullptr, static_cast<int>(kGuitarTunings.size()));
-
-        // Display note guide
-        const auto& selectedTuning = kGuitarTunings[tuningIndex];
-        ImGui::Text("Target Notes:");
-        for (const auto& note : selectedTuning.second) {
-            ImGui::SameLine();
-            if (mCurrentNote && mCurrentNote->name == note) {
-                ImGui::Text("%s", note.c_str());
-            } else {
-                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.5f, 0.5f, 0.5f, 1.0f));
-                ImGui::Text("%s", note.c_str());
-                ImGui::PopStyleColor();
-            }
-        }
     }
 
     ImGui::EndChild();
