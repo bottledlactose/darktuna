@@ -38,3 +38,10 @@ target_include_directories(darktuna PRIVATE
     thirdparty/portaudio/include
 )
 target_link_libraries(darktuna PRIVATE SDL3-static portaudio)
+
+# Disable console window on release builds
+if(WIN32)
+    if(CMAKE_BUILD_TYPE STREQUAL "Release")
+        set_target_properties(darktuna PROPERTIES WIN32_EXECUTABLE TRUE)
+    endif()
+endif()
