@@ -13,6 +13,7 @@
 #include "Tuner.hpp"
 #include "Tunings.hpp"
 
+#include "version.h"
 #include "logo.h"
 
 SDL_Surface* CreateSurfaceFromIcon() {
@@ -77,7 +78,7 @@ bool App::Initialize() {
     float display_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
     SDL_WindowFlags window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
-    mWindow = SDL_CreateWindow("Darktuna", 600, 300, window_flags);
+    mWindow = SDL_CreateWindow((std::string("Darktuna v") + DARKTUNA_VERSION).c_str(), 600, 300, window_flags);
     if (!mWindow) {
         SDL_Log("Failed to create SDL window: %s", SDL_GetError());
         return false;
@@ -253,7 +254,7 @@ void App::Draw() {
         }
 
         if (ImGui::BeginMenu("About")) {
-            ImGui::MenuItem("Darktuna", nullptr, false, false);
+            ImGui::MenuItem((std::string("Darktuna v") + DARKTUNA_VERSION).c_str(), nullptr, false, false);
             ImGui::MenuItem("by bottledlactose", nullptr, false, false);
             ImGui::EndMenu();
         }

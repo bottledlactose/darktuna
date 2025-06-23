@@ -6,3 +6,6 @@
 
 # Exclude CMake build artifacts
 build/
+
+# Exclude version header
+version.h
