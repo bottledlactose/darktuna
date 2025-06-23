@@ -37,7 +37,6 @@ add_executable(darktuna
     ${IMGUI_SOURCES})
 
 target_include_directories(darktuna PRIVATE
-    data
     thirdparty/sdl/include
     thirdparty/imgui
     thirdparty/portaudio/include
