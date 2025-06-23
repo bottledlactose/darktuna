@@ -76,7 +76,7 @@ bool App::Initialize() {
     }
 
     float display_scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
-    SDL_WindowFlags window_flags = SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
+    SDL_WindowFlags window_flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIDDEN | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 
     mWindow = SDL_CreateWindow((std::string("Darktuna v") + DARKTUNA_VERSION).c_str(), 600, 300, window_flags);
     if (!mWindow) {
